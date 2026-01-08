@@ -120,11 +120,11 @@ int blocks = (n + threads_per_block - 1) / threads_per_block;
 - 把遇到的问题写下来
 
 **✅ 今日完成清单：**
-- [ ] 01_hello_cuda.cu 运行成功
-- [ ] 02_memory_basic.cu 运行成功
-- [ ] 03_vector_add.cu 运行成功
-- [ ] 理解了索引计算公式
-- [ ] 记录了学习笔记
+- ✅ 01_hello_cuda.cu 运行成功
+- ✅ 02_memory_basic.cu 运行成功
+- ✅ 03_vector_add.cu 运行成功
+- ✅ 理解了索引计算公式
+- ✅ 记录了学习笔记
 
 ---
 
