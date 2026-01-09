@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <cuda_runtime.h>
-
+#include "cuda_utils.h"
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -45,8 +45,7 @@ int main() {
 
     // 启动kernel
     matrix_kernel<<<grid, block>>>();
-
-    cudaDeviceSynchronize();
+    CUDA_CHECK_KERNEL();
 
     printf("\nGPU执行完成\n");
 

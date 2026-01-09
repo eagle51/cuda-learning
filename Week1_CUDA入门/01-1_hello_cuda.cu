@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <cuda_runtime.h>
-
+#include <device_launch_parameters.h>
+#include "cuda_utils.h"
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -28,9 +29,7 @@ int main() {
 
     // 启动kernel
     hello_kernel<<<blocks, threads_per_block>>>();
-
-    // 等待GPU完成
-    cudaDeviceSynchronize();
+	CUDA_CHECK_KERNEL();
 
     printf("GPU执行完成\n");
 

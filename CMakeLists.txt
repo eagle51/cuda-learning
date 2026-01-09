@@ -22,19 +22,19 @@ endif()
 find_package(CUDAToolkit REQUIRED)
 
 # 添加可执行文件
-add_executable(vector_add "Week1_CUDA入门/05_vector_add_gpu_timed.cu")
+add_executable(error_hand "Week1_CUDA入门/04_vector_add_cpu.cpp")
 
 # 设置 CUDA 架构（RTX 4060 使用 Ada Lovelace 架构 sm_89）
-set_target_properties(vector_add PROPERTIES
+set_target_properties(error_hand PROPERTIES
     CUDA_ARCHITECTURES "89"
 )
 
 # Windows 特定设置：禁用 manifest 嵌入
 if(MSVC)
-    set_target_properties(vector_add PROPERTIES
+    set_target_properties(error_hand PROPERTIES
         LINK_FLAGS "/MANIFEST:NO"
     )
 endif()
 
 # 链接 CUDA 库
-target_link_libraries(vector_add CUDA::cudart)
+target_link_libraries(error_hand CUDA::cudart)
