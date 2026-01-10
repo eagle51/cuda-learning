@@ -8,6 +8,11 @@
 
 #include <stdio.h>
 #include <cuda_runtime.h>
+#include <device_launch_parameters.h>
+#include "cuda_utils.h"
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 __global__ void vector_add(const float* a, const float* b, float* c, int n) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -32,13 +37,13 @@ void test_size(int n) {
     
     // 分配Device内存
     float *d_a, *d_b, *d_c;
-    cudaMalloc(&d_a, bytes);
-    cudaMalloc(&d_b, bytes);
-    cudaMalloc(&d_c, bytes);
+    CUDA_CHECK(cudaMalloc(&d_a, bytes));
+    CUDA_CHECK(cudaMalloc(&d_b, bytes));
+    CUDA_CHECK(cudaMalloc(&d_c, bytes));
     
     // 拷贝数据到GPU
-    cudaMemcpy(d_a, h_a, bytes, cudaMemcpyHostToDevice);
-    cudaMemcpy(d_b, h_b, bytes, cudaMemcpyHostToDevice);
+    CUDA_CHECK(cudaMemcpy(d_a, h_a, bytes, cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(d_b, h_b, bytes, cudaMemcpyHostToDevice));
     
     // 配置kernel
     int threads = 256;
@@ -46,25 +51,25 @@ void test_size(int n) {
     
     // 创建CUDA Event用于计时
     cudaEvent_t start, stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
+    CUDA_CHECK(cudaEventCreate(&start));
+    CUDA_CHECK(cudaEventCreate(&stop));
     
     // 开始计时
-    cudaEventRecord(start);
+    CUDA_CHECK(cudaEventRecord(start));
     
     // 启动kernel
     vector_add<<<blocks, threads>>>(d_a, d_b, d_c, n);
-    
+    CUDA_CHECK(cudaGetLastError());
     // 结束计时
-    cudaEventRecord(stop);
-    cudaEventSynchronize(stop);
+    CUDA_CHECK(cudaEventRecord(stop));
+    CUDA_CHECK(cudaEventSynchronize(stop));
     
     // 获取时间
     float gpu_time;
-    cudaEventElapsedTime(&gpu_time, start, stop);
+    CUDA_CHECK(cudaEventElapsedTime(&gpu_time, start, stop));
     
     // 拷贝结果
-    cudaMemcpy(h_c, d_c, bytes, cudaMemcpyDeviceToHost);
+    CUDA_CHECK(cudaMemcpy(h_c, d_c, bytes, cudaMemcpyDeviceToHost));
     
     // 验证
     bool correct = true;
@@ -84,16 +89,19 @@ void test_size(int n) {
     
     // 清理
     delete[] h_a; delete[] h_b; delete[] h_c;
-    cudaFree(d_a); cudaFree(d_b); cudaFree(d_c);
-    cudaEventDestroy(start); cudaEventDestroy(stop);
+    CUDA_CHECK(cudaFree(d_a)); CUDA_CHECK(cudaFree(d_b)); CUDA_CHECK(cudaFree(d_c));
+    CUDA_CHECK(cudaEventDestroy(start)); CUDA_CHECK(cudaEventDestroy(stop));
 }
 
 int main() {
+#ifdef _WIN32
+	SetConsoleOutputCP(CP_UTF8);
+#endif
     printf("=== GPU向量加法性能测试 ===\n\n");
     
     int sizes[] = {1000, 10000, 100000, 1000000, 10000000};
     
-    printf("%-12s %-15s %-15s %s\n", "数据量", "GPU时间(ms)", "吞吐量(GB/s)", "结果");
+    printf("%-12s %-15s %-15s %s\n", "Size", "GPU Time ms", "Throughput", "Result");
     printf("─────────────────────────────────────────────────────\n");
     
     for (int i = 0; i < 5; i++) {
@@ -102,7 +110,7 @@ int main() {
     
     printf("\n=== 测试完成 ===\n");
     printf("\n现在制作CPU vs GPU对比表:\n");
-    printf("把CPU和GPU的数据放在一起，计算加速比！\n");
+    printf("把CPU和GPU的数据放在一起，计算加速比！ \n");
     
     return 0;
 }

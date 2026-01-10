@@ -9,6 +9,8 @@
 #include <stdio.h>
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
+#include "cuda_utils.h"
+
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -62,18 +64,18 @@ int main() {
         h_a[i] = i * 1.0f;
         h_b[i] = i * 2.0f;
     }
-    printf("✓ 数据初始化完成\n\n");
+    printf("✓ 数据初始化完成 \n");
     
     // === 4. 分配Device内存 ===
     float *d_a, *d_b, *d_c;
-    cudaMalloc(&d_a, bytes);
-    cudaMalloc(&d_b, bytes);
-    cudaMalloc(&d_c, bytes);
-    printf("✓ GPU内存分配完成\n");
+    CUDA_CHECK(cudaMalloc(&d_a, bytes));
+    CUDA_CHECK(cudaMalloc(&d_b, bytes));
+    CUDA_CHECK(cudaMalloc(&d_c, bytes));
+    printf("✓ GPU内存分配完成 \n");
     
     // === 5. 拷贝数据到GPU ===
-    cudaMemcpy(d_a, h_a, bytes, cudaMemcpyHostToDevice);
-    cudaMemcpy(d_b, h_b, bytes, cudaMemcpyHostToDevice);
+    CUDA_CHECK(cudaMemcpy(d_a, h_a, bytes, cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(d_b, h_b, bytes, cudaMemcpyHostToDevice));
     printf("✓ 数据拷贝到GPU完成\n\n");
     
     // === 6. 配置2D Grid ===
@@ -95,23 +97,24 @@ int main() {
     
     // === 7. 创建Event计时 ===
     cudaEvent_t start, stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
+    CUDA_CHECK(cudaEventCreate(&start));
+    CUDA_CHECK(cudaEventCreate(&stop));
     
     // === 8. 启动kernel ===
     printf("启动GPU计算...\n");
-    cudaEventRecord(start);
+    CUDA_CHECK(cudaEventRecord(start));
     matrix_add<<<num_blocks, threads_per_block>>>(d_a, d_b, d_c, width, height);
-    cudaEventRecord(stop);
-    cudaEventSynchronize(stop);
+    CUDA_CHECK(cudaGetLastError());
+    CUDA_CHECK(cudaEventRecord(stop));
+    CUDA_CHECK(cudaEventSynchronize(stop));
     
     float milliseconds = 0;
-    cudaEventElapsedTime(&milliseconds, start, stop);
+    CUDA_CHECK(cudaEventElapsedTime(&milliseconds, start, stop));
     printf("✓ GPU计算完成\n");
     printf("  执行时间: %.3f ms\n\n", milliseconds);
     
     // === 9. 拷贝结果回CPU ===
-    cudaMemcpy(h_c, d_c, bytes, cudaMemcpyDeviceToHost);
+    CUDA_CHECK(cudaMemcpy(h_c, d_c, bytes, cudaMemcpyDeviceToHost));
     printf("✓ 结果拷贝回CPU完成\n\n");
     
     // === 10. 验证结果 ===
@@ -132,7 +135,7 @@ int main() {
     }
     
     if (correct) {
-        printf("✓ 结果验证通过！\n");
+        printf("✓ 结果验证通过！ \n");
     } else {
         printf("✗ 发现 %d 个错误\n", errors);
     }
@@ -156,7 +159,7 @@ int main() {
     printf("  吞吐量: %.2f GB/s\n", throughput);
     
 	cudaDeviceProp prop;
-	cudaGetDeviceProperties(&prop, 0);
+	CUDA_CHECK(cudaGetDeviceProperties(&prop, 0));
 	printf("每个Block最大线程数: %d\n", prop.maxThreadsPerBlock);
 	printf("每个SM最大线程数: %d\n", prop.maxThreadsPerMultiProcessor);
 	printf("SM数量: %d\n", prop.multiProcessorCount);
@@ -165,11 +168,11 @@ int main() {
     delete[] h_a;
     delete[] h_b;
     delete[] h_c;
-    cudaFree(d_a);
-    cudaFree(d_b);
-    cudaFree(d_c);
-    cudaEventDestroy(start);
-    cudaEventDestroy(stop);
+    CUDA_CHECK(cudaFree(d_a));
+    CUDA_CHECK(cudaFree(d_b));
+    CUDA_CHECK(cudaFree(d_c));
+    CUDA_CHECK(cudaEventDestroy(start));
+    CUDA_CHECK(cudaEventDestroy(stop));
     
     printf("\n=== 程序结束 ===\n");
     return 0;

@@ -22,7 +22,7 @@ endif()
 find_package(CUDAToolkit REQUIRED)
 
 # 添加可执行文件
-add_executable(error_hand "Week1_CUDA入门/04_vector_add_cpu.cpp")
+add_executable(error_hand "Week1_CUDA入门/06_matrix_add.cu")
 
 # 设置 CUDA 架构（RTX 4060 使用 Ada Lovelace 架构 sm_89）
 set_target_properties(error_hand PROPERTIES
