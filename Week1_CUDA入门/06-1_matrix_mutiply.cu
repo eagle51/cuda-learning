@@ -1,12 +1,9 @@
 #include <stdio.h>
 #include <cuda_runtime.h>
 #include <string>
-#include "cuda_utils.h"
 #include <device_launch_parameters.h>
 #include <chrono>
-#ifdef _WIN32
-#include <windows.h>
-#endif
+
 #define BLOCK_SIZE 16
 
 using namespace std::chrono;
@@ -63,13 +60,13 @@ void test_matrix_size(int M, int K, int N) {
 	// ========== GPU版本 ==========
 	// 分配Device内存
 	float* d_A, * d_B, * d_C;
-	CUDA_CHECK(cudaMalloc(&d_A, size_A));
-	CUDA_CHECK(cudaMalloc(&d_B, size_B));
-	CUDA_CHECK(cudaMalloc(&d_C, size_C));
+	cudaMalloc(&d_A, size_A);
+	cudaMalloc(&d_B, size_B);
+	cudaMalloc(&d_C, size_C);
 
 	// 拷贝数据到GPU
-	CUDA_CHECK(cudaMemcpy(d_A, h_A, size_A, cudaMemcpyHostToDevice));
-	CUDA_CHECK(cudaMemcpy(d_B, h_B, size_B, cudaMemcpyHostToDevice));
+	cudaMemcpy(d_A, h_A, size_A, cudaMemcpyHostToDevice);
+	cudaMemcpy(d_B, h_B, size_B, cudaMemcpyHostToDevice);
 
 	// 配置Grid和Block
 	dim3 blockDim(BLOCK_SIZE, BLOCK_SIZE);
@@ -78,26 +75,25 @@ void test_matrix_size(int M, int K, int N) {
 
 	// 创建CUDA Event用于计时
 	cudaEvent_t start, stop;
-	CUDA_CHECK(cudaEventCreate(&start));
-	CUDA_CHECK(cudaEventCreate(&stop));
+	cudaEventCreate(&start);
+	cudaEventCreate(&stop);
 
 	// 开始GPU计时
-	CUDA_CHECK(cudaEventRecord(start));
+	cudaEventRecord(start);
 
 	// 执行kernel
 	matrix_mul << <gridDim, blockDim >> > (d_A, d_B, d_C, M, K, N);
-	CUDA_CHECK(cudaGetLastError());
 
 	// 结束GPU计时
-	CUDA_CHECK(cudaEventRecord(stop));
-	CUDA_CHECK(cudaEventSynchronize(stop));
+	cudaEventRecord(stop);
+	cudaEventSynchronize(stop);
 
 	// 获取GPU时间
 	float gpu_time;
-	CUDA_CHECK(cudaEventElapsedTime(&gpu_time, start, stop));
+	cudaEventElapsedTime(&gpu_time, start, stop);
 
 	// 拷贝结果回CPU
-	CUDA_CHECK(cudaMemcpy(h_C_gpu, d_C, size_C, cudaMemcpyDeviceToHost));
+	cudaMemcpy(h_C_gpu, d_C, size_C, cudaMemcpyDeviceToHost);
 
 	// 验证结果
 	bool correct = true;
@@ -121,16 +117,11 @@ void test_matrix_size(int M, int K, int N) {
 
 	// 清理
 	free(h_A); free(h_B); free(h_C_gpu); free(h_C_cpu);
-	CUDA_CHECK(cudaFree(d_A)); CUDA_CHECK(cudaFree(d_B)); CUDA_CHECK(cudaFree(d_C));
-	CUDA_CHECK(cudaEventDestroy(start)); CUDA_CHECK(cudaEventDestroy(stop));
+	cudaFree(d_A); cudaFree(d_B); cudaFree(d_C);
+	cudaEventDestroy(start); cudaEventDestroy(stop);
 }
 
 int main() {
-	// 设置控制台输出为 UTF-8
-#ifdef _WIN32
-	SetConsoleOutputCP(CP_UTF8);
-#endif
-
 	printf("=== 矩阵乘法性能对比 (CPU vs GPU) ===\n\n");
 	printf("%-15s %-20s %-25s %-15s %s\n",
 		"矩阵大小", "CPU耗时(ms)", "GPU耗时(基础版)(ms)", "加速比", "验证");
